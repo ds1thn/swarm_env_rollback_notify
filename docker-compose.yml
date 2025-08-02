@@ -1,0 +1,36 @@
+services:
+  app:
+    image: "pan1c/swarm_env_rollback_notify:1.0.0"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    environment:
+      CRON: "* * * * *"
+      SLACK_TOKEN: "${SLACK_TOKEN}"
+      SLACK_CHANNEL: "${SLACK_CHANNEL}"
+    labels:
+      co.elastic.logs/enabled: "false"
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 5s
+        monitor: 15s
+        order: stop-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+    user: root
+    healthcheck:
+      test: "ps aux | grep '[c]ron' || exit 1"
+      start_period: 10s
+      interval: 10s
+      timeout: 10s
+      retries: 10
